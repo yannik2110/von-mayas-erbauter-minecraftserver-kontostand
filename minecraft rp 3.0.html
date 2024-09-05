@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft RP Server</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .section { margin-bottom: 20px; }
+        .section h2 { border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        label { display: block; margin: 10px 0 5px; }
+        input, button { padding: 8px; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minecraft RP Server Verwaltung</h1>
+
+        <div class="section">
+            <h2>Kontostände</h2>
+            <p>CentralCelery79: <span id="balanceCentralCelery79">0</span> €</p>
+            <p>zwingend_Hydradt: <span id="balanceZwingendHydradt">0</span> €</p>
+        </div>
+
+        <div class="section">
+            <h2>Imobilienverwaltung</h2>
+            <label for="propertyName">Immobilie Name:</label>
+            <input type="text" id="propertyName">
+            <label for="propertyOwner">Eigentümer:</label>
+            <select id="propertyOwner">
+                <option value="CentralCelery79">CentralCelery79</option>
+                <option value="zwingend_Hydradt">zwingend_Hydradt</option>
+            </select>
+            <label for="rentalPrice">Mietpreis:</label>
+            <input type="number" id="rentalPrice" step="0.01">
+            <button onclick="addProperty()">Immobilie hinzufügen</button>
+
+            <h3>Imobilien Liste</h3>
+            <table id="propertiesTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Eigentümer</th>
+                        <th>Mietpreis</th>
+                        <th>Auktion</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Spielstunden und Verdienste</h2>
+            <label for="playerName">Spieler Name:</label>
+            <select id="playerName">
+                <option value="CentralCelery79">CentralCelery79</option>
+                <option value="zwingend_Hydradt">zwingend_Hydradt</option>
+            </select>
+            <label for="workStart">Arbeitsbeginn (HH:MM):</label>
+            <input type="time" id="workStart">
+            <label for="workEnd">Arbeitsende (HH:MM):</label>
+            <input type="time" id="workEnd">
+            <button onclick="addWorkHours()">Stunden hinzufügen</button>
+        </div>
+
+        <div class="section">
+            <h2>Wettbewerbe und Geld hinzufügen</h2>
+            <label for="competitionPlayer">Spieler Name:</label>
+            <select id="competitionPlayer">
+                <option value="CentralCelery79">CentralCelery79</option>
+                <option value="zwingend_Hydradt">zwingend_Hydradt</option>
+            </select>
+            <label for="competitionReward">Preis:</label>
+            <input type="number" id="competitionReward" step="0.01">
+            <button onclick="awardCompetition()">Wettbewerb gewinnen</button>
+
+            <label for="manualDepositPlayer">Spieler Name:</label>
+            <select id="manualDepositPlayer">
+                <option value="CentralCelery79">CentralCelery79</option>
+                <option value="zwingend_Hydradt">zwingend_Hydradt</option>
+            </select>
+            <label for="manualDepositAmount">Betrag:</label>
+            <input type="number" id="manualDepositAmount" step="0.01">
+            <button onclick="manualDeposit()">Geld hinzufügen</button>
+        </div>
+
+        <div class="section">
+            <h2>Gemeinschaftskonto</h2>
+            <p>Gesamtspenden: <span id="communityBalance">0</span> €</p>
+            <label for="donationAmount">Spende:</label>
+            <input type="number" id="donationAmount" step="0.01">
+            <button onclick="addDonation()">Spenden</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialisiere Kontostände
+        let balance = {
+            CentralCelery79: 0,
+            zwingend_Hydradt: 0
+        };
+
+        let communityBalance = 0;
+        let properties = [];
+
+        function updateBalances() {
+            document.getElementById('balanceCentralCelery79').textContent = balance.CentralCelery79.toFixed(2);
+            document.getElementById('balanceZwingendHydradt').textContent = balance.zwingend_Hydradt.toFixed(2);
+        }
+
+        function updatePropertiesTable() {
+            const tableBody = document.querySelector('#propertiesTable tbody');
+            tableBody.innerHTML = '';
+            properties.forEach((property, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${property.name}</td>
+                    <td>${property.owner}</td>
+                    <td>${property.rent} €</td>
+                    <td><button onclick="startAuction(${index})">Auktion starten</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function addProperty() {
+            const name = document.getElementById('propertyName').value;
+            const owner = document.getElementById('propertyOwner').value;
+            const rent = parseFloat(document.getElementById('rentalPrice').value);
+            if (name && owner && !isNaN(rent)) {
+                properties.push({ name, owner, rent });
+                updatePropertiesTable();
+            }
+        }
+
+        function addWorkHours() {
+            const player = document.getElementById('playerName').value;
+            const workStart = document.getElementById('workStart').value;
+            const workEnd = document.getElementById('workEnd').value;
+            if (player && workStart && workEnd) {
+                const startTime = new Date(`1970-01-01T${workStart}:00`);
+                const endTime = new Date(`1970-01-01T${workEnd}:00`);
+                let totalHours = (endTime - startTime) / (1000 * 60 * 60);
+
+                if (totalHours < 0) {
+                    totalHours += 24; // Überlauf in der Nacht
+                }
+
+                let earnings = 0;
+                let currentTime = startTime;
+
+                while (currentTime < endTime) {
+                    const isNight = currentTime.getHours() >= 20 || currentTime.getHours() < 6;
+                    if (currentTime.getHours() === 23 && currentTime.getMinutes() > 0) {
+                        totalHours -= (23 - currentTime.getHours()) / 60 + (currentTime.getMinutes() / 60);
+                        earnings += totalHours * (isNight ? 7500 : 5000);
+                        totalHours = 0;
+                    } else {
+                        earnings += (isNight ? 7500 : 5000) / 60;
+                    }
+                    currentTime.setMinutes(currentTime.getMinutes() + 1);
+                }
+
+                balance[player] += earnings;
+                updateBalances();
+            }
+        }
+
+        function awardCompetition() {
+            const player = document.getElementById('competitionPlayer').value;
+            const reward = parseFloat(document.getElementById('competitionReward').value);
+            if (player && !isNaN(reward)) {
+                balance[player] += reward;
+                updateBalances();
+            }
+        }
+
+        function manualDeposit() {
+            const player = document.getElementById('manualDepositPlayer').value;
+            const amount = parseFloat(document.getElementById('manualDepositAmount').value);
+            if (player && !isNaN(amount)) {
+                balance[player] += amount;
+                updateBalances();
+            }
+        }
+
+        function addDonation() {
+            const amount = parseFloat(document.getElementById('donationAmount').value);
+            if (!isNaN(amount)) {
+                const numPlayers = Object.keys(balance).length;
+                const donationPerPlayer = amount / numPlayers;
+                Object.keys(balance).forEach(player => {
+                    balance[player]
